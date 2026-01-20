@@ -1,0 +1,47 @@
+# ============================================================================
+# EXPERIMENT EXP-001: Pod Kill
+# ============================================================================
+# Target Service: catalog-service
+# Chaos Type:     pod-kill
+# Duration:       30 seconds
+# Risk Level:     🟢 Low
+#
+# HYPOTHESIS:
+#   "When a catalog-service pod is killed, the service should remain
+#    available through the remaining replica, and Kubernetes should
+#    automatically restart the killed pod within 30 seconds."
+#
+# EXPECTED OUTCOME:
+#   - Brief latency spike (<500ms) during failover
+#   - No 5xx errors returned to clients
+#   - Pod restarted within 30 seconds
+#
+# ABORT CONDITIONS:
+#   ⚠️  Error rate exceeds 10%
+#   ⚠️  P95 latency exceeds 2 seconds
+#   ⚠️  Both catalog pods become unavailable
+#
+# MANUAL ABORT:
+#   kubectl delete podchaos exp-001-catalog-pod-kill -n microshop
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: exp-001-catalog-pod-kill
+  namespace: microshop
+  labels:
+    experiment: exp-001
+    experiment-name: pod-kill
+    type: pod-failure
+    service: catalog
+    risk-level: low
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces:
+      - microshop
+    labelSelectors:
+      app: catalog
+  duration: "30s"

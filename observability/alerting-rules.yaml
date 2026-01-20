@@ -1,0 +1,72 @@
+# ChaosLab Prometheus Alerting Rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: microshop-chaos-alerts
+  namespace: monitoring
+  labels:
+    app: microshop
+    prometheus: kube-prometheus
+    release: prometheus
+spec:
+  groups:
+    - name: chaos-experiments
+      rules:
+        - alert: ChaosExperimentActive
+          expr: count(chaos_mesh_experiments{phase="Running"}) > 0
+          for: 0m
+          labels: { severity: info, category: chaos }
+          annotations:
+            summary: "Chaos experiment running"
+            description: "{{ $value }} experiment(s) active"
+
+    - name: microshop-availability
+      rules:
+        - alert: MicroShopServiceDown
+          expr: sum(kube_pod_status_ready{namespace="microshop",condition="true"}) == 0
+          for: 1m
+          labels: { severity: critical }
+          annotations:
+            summary: "MicroShop is completely down"
+
+        - alert: MicroShopServiceDegraded
+          expr: (sum(kube_pod_status_ready{namespace="microshop",condition="true"}) / count(kube_pod_info{namespace="microshop"})) < 0.8
+          for: 2m
+          labels: { severity: warning }
+          annotations:
+            summary: "MicroShop degraded - {{ $value | humanizePercentage }} ready"
+
+    - name: microshop-recovery
+      rules:
+        - alert: MicroShopPodRestarting
+          expr: sum(increase(kube_pod_container_status_restarts_total{namespace="microshop"}[5m])) > 0
+          labels: { severity: warning }
+          annotations:
+            summary: "{{ $value }} restart(s) in 5m"
+
+        - alert: MicroShopPodCrashLoop
+          expr: rate(kube_pod_container_status_restarts_total{namespace="microshop"}[15m]) > 0.2
+          for: 5m
+          labels: { severity: critical }
+          annotations:
+            summary: "Crash loop detected: {{ $labels.pod }}"
+
+    - name: microshop-data-tier
+      rules:
+        - alert: PostgreSQLDown
+          expr: sum(kube_pod_status_ready{namespace="microshop",pod=~"postgresql.*",condition="true"}) == 0
+          for: 1m
+          labels: { severity: critical }
+          annotations: { summary: "PostgreSQL is down" }
+
+        - alert: RedisDown
+          expr: sum(kube_pod_status_ready{namespace="microshop",pod=~"redis.*",condition="true"}) == 0
+          for: 1m
+          labels: { severity: critical }
+          annotations: { summary: "Redis is down" }
+
+        - alert: RabbitMQDown
+          expr: sum(kube_pod_status_ready{namespace="microshop",pod=~"rabbitmq.*",condition="true"}) == 0
+          for: 1m
+          labels: { severity: warning }
+          annotations: { summary: "RabbitMQ is down" }

@@ -1,0 +1,59 @@
+# ============================================================================
+# EXPERIMENT EXP-003: CPU Stress
+# ============================================================================
+# Target Service: checkout-service
+# Chaos Type:     StressChaos (CPU)
+# Duration:       120 seconds
+# Risk Level:     🟡 Medium
+#
+# HYPOTHESIS:
+#   "When checkout-service experiences high CPU load (80%), the
+#    Kubernetes HorizontalPodAutoscaler should scale up additional
+#    replicas, and existing requests should queue rather than fail."
+#
+# EXPECTED OUTCOME:
+#   - Increased P95 latency during stress
+#   - HPA triggers scale-out within 60 seconds (if configured)
+#   - No OOMKilled pods
+#   - Gradual recovery after stress ends
+#
+# POTENTIAL FINDING:
+#   ⚠️  checkout-service may NOT have HPA configured - this would be
+#      a resilience gap to address
+#
+# BLAST RADIUS:
+#   - checkout-service (direct - reduced throughput)
+#   - frontend (indirect - checkout page slow/timeout)
+#
+# ABORT CONDITIONS:
+#   ⚠️  OOMKilled events occur
+#   ⚠️  Checkout error rate exceeds 10%
+#   ⚠️  Pod restarts during experiment
+#
+# MANUAL ABORT:
+#   kubectl delete stresschaos exp-003-checkout-cpu-stress -n microshop
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: exp-003-checkout-cpu-stress
+  namespace: microshop
+  labels:
+    experiment: exp-003
+    experiment-name: cpu-stress
+    type: cpu-stress
+    service: checkout
+    risk-level: medium
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - microshop
+    labelSelectors:
+      app: checkout
+  stressors:
+    cpu:
+      workers: 2
+      load: 80
+  duration: "120s"

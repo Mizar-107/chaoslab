@@ -1,0 +1,64 @@
+# ============================================================================
+# EXPERIMENT EXP-002: Network Latency Injection
+# ============================================================================
+# Target Service: cart-service → redis
+# Chaos Type:     NetworkChaos (delay)
+# Duration:       60 seconds
+# Risk Level:     🟡 Medium
+#
+# HYPOTHESIS:
+#   "When 200ms latency is injected between cart-service and Redis,
+#    the cart operations should still complete successfully but with
+#    increased response times. The system should NOT cascade failures."
+#
+# EXPECTED OUTCOME:
+#   - Cart API latency increases by ~200-250ms
+#   - No timeout errors (Redis timeout is 5s)
+#   - Frontend may feel slower but functional
+#
+# BLAST RADIUS:
+#   - cart-service (direct - all Redis operations delayed)
+#   - checkout-service (indirect - validates cart before checkout)
+#   - frontend (indirect - cart UI slower)
+#
+# ABORT CONDITIONS:
+#   ⚠️  Cart error rate exceeds 5%
+#   ⚠️  Redis timeout errors occur
+#   ⚠️  Checkout success rate drops below 95%
+#
+# MANUAL ABORT:
+#   kubectl delete networkchaos exp-002-cart-network-latency -n microshop
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: exp-002-cart-network-latency
+  namespace: microshop
+  labels:
+    experiment: exp-002
+    experiment-name: network-latency
+    type: network-delay
+    service: cart
+    risk-level: medium
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - microshop
+    labelSelectors:
+      app: cart
+  delay:
+    latency: "200ms"
+    jitter: "50ms"
+    correlation: "25"
+  duration: "60s"
+  direction: to
+  target:
+    selector:
+      namespaces:
+        - microshop
+      labelSelectors:
+        app: redis
+    mode: all

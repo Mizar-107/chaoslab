@@ -1,0 +1,57 @@
+# ============================================================================
+# EXPERIMENT EXP-003B: Memory Stress
+# ============================================================================
+# Target Service: checkout-service
+# Chaos Type:     StressChaos (Memory)
+# Duration:       120 seconds
+# Risk Level:     🟡 Medium
+#
+# HYPOTHESIS:
+#   "When checkout-service experiences memory pressure (256MB allocation),
+#    the pod should either:
+#    a) Continue operating with degraded performance, OR
+#    b) Be OOMKilled and automatically restarted by Kubernetes"
+#
+# EXPECTED OUTCOME:
+#   - Memory usage approaches container limit
+#   - If OOMKilled: pod restarts within 30 seconds
+#   - If survives: increased GC pauses may affect latency
+#   - Other services remain unaffected
+#
+# NOTES:
+#   - checkout-service has 512Mi memory limit
+#   - 256MB stress should approach but not exceed limit
+#   - This tests Kubernetes resource enforcement
+#
+# ABORT CONDITIONS:
+#   ⚠️  Multiple consecutive OOMKills (CrashLoopBackOff)
+#   ⚠️  Checkout completely unavailable for >60 seconds
+#   ⚠️  Node-level memory pressure affecting other pods
+#
+# MANUAL ABORT:
+#   kubectl delete stresschaos exp-003b-checkout-memory-stress -n microshop
+# ============================================================================
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: exp-003b-checkout-memory-stress
+  namespace: microshop
+  labels:
+    experiment: exp-003b
+    experiment-name: memory-stress
+    type: memory-stress
+    service: checkout
+    risk-level: medium
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - microshop
+    labelSelectors:
+      app: checkout
+  stressors:
+    memory:
+      workers: 1
+      size: "256MB"
+  duration: "120s"

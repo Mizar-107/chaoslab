@@ -1,0 +1,595 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "description": "Chaos Experiment Execution Dashboard - Track active experiments and their impact",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "liveNow": true,
+    "panels": [
+        {
+            "collapsed": false,
+            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+            "id": 100,
+            "panels": [],
+            "title": "🔬 Active Chaos Experiments",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "thresholds" },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "green", "value": null },
+                            { "color": "orange", "value": 1 },
+                            { "color": "red", "value": 3 }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+            "id": 1,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "count(chaos_mesh_experiments{phase=\"Running\"}) or vector(0)",
+                    "legendFormat": "Active",
+                    "refId": "A"
+                }
+            ],
+            "title": "🔴 Running Experiments",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "thresholds" },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "green", "value": null }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "count(chaos_mesh_experiments{phase=\"Finished\"}) or vector(0)",
+                    "legendFormat": "Completed",
+                    "refId": "A"
+                }
+            ],
+            "title": "✅ Completed Today",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "thresholds" },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "green", "value": null },
+                            { "color": "yellow", "value": 1 },
+                            { "color": "red", "value": 3 }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+            "id": 3,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"microshop\"}[15m]))",
+                    "legendFormat": "Restarts",
+                    "refId": "A"
+                }
+            ],
+            "title": "🔄 Restarts (15m)",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "thresholds" },
+                    "mappings": [],
+                    "max": 1,
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "red", "value": null },
+                            { "color": "yellow", "value": 0.8 },
+                            { "color": "green", "value": 0.95 }
+                        ]
+                    },
+                    "unit": "percentunit"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+            "id": 4,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum(kube_pod_status_ready{namespace=\"microshop\",condition=\"true\"}) / count(kube_pod_info{namespace=\"microshop\"})",
+                    "legendFormat": "Availability",
+                    "refId": "A"
+                }
+            ],
+            "title": "📊 Current Availability",
+            "type": "stat"
+        },
+        {
+            "collapsed": false,
+            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+            "id": 101,
+            "panels": [],
+            "title": "📈 Experiment Impact Timeline",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "palette-classic" },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "gradientMode": "opacity",
+                        "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": { "type": "linear" },
+                        "showPoints": "never",
+                        "spanNulls": true,
+                        "stacking": { "group": "A", "mode": "none" },
+                        "thresholdsStyle": { "mode": "off" }
+                    },
+                    "mappings": [],
+                    "max": 1,
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [{ "color": "green", "value": null }]
+                    },
+                    "unit": "percentunit"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "calcs": ["min", "mean", "last"],
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": { "mode": "multi", "sort": "desc" }
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum(kube_pod_status_ready{namespace=\"microshop\",pod=~\"frontend.*\",condition=\"true\"}) / count(kube_pod_info{namespace=\"microshop\",pod=~\"frontend.*\"})",
+                    "legendFormat": "Frontend",
+                    "refId": "A"
+                },
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum(kube_pod_status_ready{namespace=\"microshop\",pod=~\"catalog.*\",condition=\"true\"}) / count(kube_pod_info{namespace=\"microshop\",pod=~\"catalog.*\"})",
+                    "legendFormat": "Catalog",
+                    "refId": "B"
+                },
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum(kube_pod_status_ready{namespace=\"microshop\",pod=~\"cart.*\",condition=\"true\"}) / count(kube_pod_info{namespace=\"microshop\",pod=~\"cart.*\"})",
+                    "legendFormat": "Cart",
+                    "refId": "C"
+                },
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum(kube_pod_status_ready{namespace=\"microshop\",pod=~\"checkout.*\",condition=\"true\"}) / count(kube_pod_info{namespace=\"microshop\",pod=~\"checkout.*\"})",
+                    "legendFormat": "Checkout",
+                    "refId": "D"
+                }
+            ],
+            "title": "Service Availability During Experiment",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+            "id": 102,
+            "panels": [],
+            "title": "🔥 Recovery Metrics",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "palette-classic" },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "bars",
+                        "fillOpacity": 60,
+                        "gradientMode": "none",
+                        "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": { "type": "linear" },
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "stacking": { "group": "A", "mode": "normal" },
+                        "thresholdsStyle": { "mode": "off" }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [{ "color": "green", "value": null }]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 7, "w": 12, "x": 0, "y": 15 },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "calcs": ["sum"],
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": { "mode": "multi", "sort": "none" }
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"microshop\"}[1m])",
+                    "legendFormat": "{{pod}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Pod Restart Events",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "palette-classic" },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 10,
+                        "gradientMode": "none",
+                        "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": { "type": "linear" },
+                        "showPoints": "auto",
+                        "spanNulls": true,
+                        "stacking": { "group": "A", "mode": "none" },
+                        "thresholdsStyle": { "mode": "off" }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [{ "color": "green", "value": null }]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 7, "w": 12, "x": 12, "y": 15 },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "calcs": ["last"],
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": { "mode": "multi", "sort": "none" }
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum by (pod) (kube_pod_status_ready{namespace=\"microshop\",condition=\"true\"})",
+                    "legendFormat": "{{pod}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Pod Ready State",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+            "id": 103,
+            "panels": [],
+            "title": "💾 Resource Impact",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "palette-classic" },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "gradientMode": "none",
+                        "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": { "type": "linear" },
+                        "showPoints": "never",
+                        "spanNulls": true,
+                        "stacking": { "group": "A", "mode": "none" },
+                        "thresholdsStyle": { "mode": "off" }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [{ "color": "green", "value": null }]
+                    },
+                    "unit": "percent"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 7, "w": 12, "x": 0, "y": 23 },
+            "id": 8,
+            "options": {
+                "legend": {
+                    "calcs": ["mean", "max"],
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": { "mode": "multi", "sort": "desc" }
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"microshop\",container!=\"\"}[5m])) * 100",
+                    "legendFormat": "{{pod}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "CPU Usage by Pod",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": { "mode": "palette-classic" },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "gradientMode": "none",
+                        "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": { "type": "linear" },
+                        "showPoints": "never",
+                        "spanNulls": true,
+                        "stacking": { "group": "A", "mode": "none" },
+                        "thresholdsStyle": { "mode": "off" }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [{ "color": "green", "value": null }]
+                    },
+                    "unit": "bytes"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 7, "w": 12, "x": 12, "y": 23 },
+            "id": 9,
+            "options": {
+                "legend": {
+                    "calcs": ["mean", "max"],
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": { "mode": "multi", "sort": "desc" }
+            },
+            "pluginVersion": "9.5.0",
+            "targets": [
+                {
+                    "datasource": { "type": "prometheus", "uid": "${datasource}" },
+                    "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"microshop\",container!=\"\"})",
+                    "legendFormat": "{{pod}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Memory Usage by Pod",
+            "type": "timeseries"
+        }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": ["chaos", "experiments", "microshop"],
+    "templating": {
+        "list": [
+            {
+                "current": {
+                    "selected": false,
+                    "text": "Prometheus",
+                    "value": "prometheus"
+                },
+                "hide": 0,
+                "includeAll": false,
+                "label": "Data Source",
+                "multi": false,
+                "name": "datasource",
+                "options": [],
+                "query": "prometheus",
+                "refresh": 1,
+                "regex": "",
+                "skipUrlSync": false,
+                "type": "datasource"
+            }
+        ]
+    },
+    "time": {
+        "from": "now-30m",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "",
+    "title": "Chaos Experiments",
+    "uid": "chaos-experiments",
+    "version": 1,
+    "weekStart": ""
+}

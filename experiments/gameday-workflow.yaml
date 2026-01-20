@@ -1,0 +1,139 @@
+# ============================================================================
+# GameDay Simulation Workflow
+# ============================================================================
+# A Chaos Mesh Workflow that orchestrates multiple chaos experiments in sequence.
+# This workflow simulates a realistic failure scenario for GameDay training.
+#
+# Usage:
+#   kubectl apply -f experiments/gameday-workflow.yaml
+#   kubectl get workflow -n microshop -w
+#
+# Abort:
+#   kubectl delete workflow gameday-simulation -n microshop
+# ============================================================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: gameday-simulation
+  namespace: microshop
+  labels:
+    app.kubernetes.io/name: chaoslab
+    app.kubernetes.io/component: gameday
+spec:
+  entry: gameday-main
+  templates:
+    # ========================================================================
+    # Main Entry Point
+    # ========================================================================
+    - name: gameday-main
+      templateType: Serial
+      deadline: 30m
+      children:
+        - warmup-phase
+        - light-chaos-phase
+        - heavy-chaos-phase
+        - recovery-phase
+
+    # ========================================================================
+    # Phase 1: Warmup (2 minutes baseline)
+    # ========================================================================
+    - name: warmup-phase
+      templateType: Suspend
+      deadline: 2m
+
+    # ========================================================================
+    # Phase 2: Light Chaos (Pod Kill + Network Latency in parallel)
+    # ========================================================================
+    - name: light-chaos-phase
+      templateType: Parallel
+      deadline: 2m
+      children:
+        - pod-kill-chaos
+        - network-latency-chaos
+
+    # Pod Kill: Kill one catalog-service pod
+    - name: pod-kill-chaos
+      templateType: PodChaos
+      deadline: 60s
+      podChaos:
+        action: pod-kill
+        mode: one
+        selector:
+          namespaces:
+            - microshop
+          labelSelectors:
+            app: catalog
+
+    # Network Latency: Add 100ms delay to cart->redis
+    - name: network-latency-chaos
+      templateType: NetworkChaos
+      deadline: 90s
+      networkChaos:
+        action: delay
+        mode: all
+        selector:
+          namespaces:
+            - microshop
+          labelSelectors:
+            app: cart
+        delay:
+          latency: 100ms
+          correlation: "50"
+          jitter: 20ms
+        direction: to
+        target:
+          selector:
+            namespaces:
+              - microshop
+            labelSelectors:
+              app: redis
+          mode: all
+
+    # ========================================================================
+    # Phase 3: Heavy Chaos (Resource Stress)
+    # ========================================================================
+    - name: heavy-chaos-phase
+      templateType: Serial
+      deadline: 5m
+      children:
+        - cpu-stress-chaos
+        - memory-stress-chaos
+
+    # CPU Stress: 50% load on checkout
+    - name: cpu-stress-chaos
+      templateType: StressChaos
+      deadline: 90s
+      stressChaos:
+        mode: all
+        selector:
+          namespaces:
+            - microshop
+          labelSelectors:
+            app: checkout
+        stressors:
+          cpu:
+            workers: 1
+            load: 50
+
+    # Memory Stress: 128MB pressure on checkout
+    - name: memory-stress-chaos
+      templateType: StressChaos
+      deadline: 90s
+      stressChaos:
+        mode: all
+        selector:
+          namespaces:
+            - microshop
+          labelSelectors:
+            app: checkout
+        stressors:
+          memory:
+            workers: 1
+            size: 128Mi
+
+    # ========================================================================
+    # Phase 4: Recovery (5 minutes observation)
+    # ========================================================================
+    - name: recovery-phase
+      templateType: Suspend
+      deadline: 5m
