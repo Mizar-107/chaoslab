@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "microshop.namespace" . }}
+  labels:
+    {{- include "microshop.labels" . | nindent 4 }}
+    purpose: chaos-engineering-target

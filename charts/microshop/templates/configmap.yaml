@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microshop-config
+  namespace: {{ include "microshop.namespace" . }}
+  labels:
+    {{- include "microshop.labels" . | nindent 4 }}
+data:
+  # Service Discovery
+  FRONTEND_URL: "http://frontend:{{ .Values.frontend.service.port }}"
+  CATALOG_URL: "http://catalog:{{ .Values.catalog.service.port }}"
+  CART_URL: "http://cart:{{ .Values.cart.service.port }}"
+  CHECKOUT_URL: "http://checkout:{{ .Values.checkout.service.port }}"
+  
+  # Database connections
+  DATABASE_HOST: "postgresql"
+  DATABASE_PORT: "{{ .Values.postgresql.service.port }}"
+  DATABASE_NAME: "{{ .Values.postgresql.auth.database }}"
+  
+  # Redis connection
+  REDIS_HOST: "redis"
+  REDIS_PORT: "{{ .Values.redis.service.port }}"
+  
+  # RabbitMQ connection
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "{{ .Values.rabbitmq.service.amqpPort }}"
+  
+  # Application settings
+  LOG_LEVEL: "info"
+  ENVIRONMENT: "development"

@@ -1,0 +1,267 @@
+# =============================================================================
+# ChaosLab: Service Level Objectives (SLOs) Configuration
+# =============================================================================
+# Defines SLI/SLO targets for MicroShop services.
+# These configurations establish what "steady state" means for each service
+# and are used to evaluate the impact of chaos experiments.
+#
+# Format: PrometheusServiceLevel CRD (compatible with Sloth SLO generator)
+# Alternatively, can be imported directly as Prometheus recording rules.
+# =============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microshop-slos
+  namespace: monitoring
+  labels:
+    app: microshop
+    component: slo-definitions
+data:
+  slos.yaml: |
+    # ==========================================================================
+    # SERVICE LEVEL INDICATORS (SLIs) & OBJECTIVES (SLOs)
+    # ==========================================================================
+    #
+    # | Service   | SLI                | Measurement                      | Target  |
+    # |-----------|--------------------|----------------------------------|---------|
+    # | Frontend  | Availability       | HTTP 2xx / total requests        | 99.9%   |
+    # | Frontend  | Latency            | P95 response time                | < 200ms |
+    # | Catalog   | Availability       | Successful responses / total     | 99.9%   |
+    # | Catalog   | Latency            | P95 response time                | < 100ms |
+    # | Cart      | Availability       | HTTP 2xx / total requests        | 99.5%   |
+    # | Cart      | Latency            | P95 response time                | < 150ms |
+    # | Checkout  | Availability       | Successful orders / attempts     | 99.0%   |
+    # | Checkout  | Latency            | P95 order completion             | < 500ms |
+    #
+    # ==========================================================================
+
+    service: microshop
+    version: "1.0"
+    
+    slos:
+      # ------------------------------------------------------------------------
+      # FRONTEND SERVICE
+      # ------------------------------------------------------------------------
+      - name: frontend-availability
+        description: "Frontend HTTP availability - percentage of successful responses"
+        objective: 99.9
+        window: 30d
+        sli:
+          type: availability
+          good_query: |
+            sum(rate(kube_pod_status_ready{namespace="microshop",pod=~"frontend.*",condition="true"}[5m]))
+          total_query: |
+            count(kube_pod_status_ready{namespace="microshop",pod=~"frontend.*"})
+        alerting:
+          burn_rate_alerts:
+            - severity: critical
+              short_window: 5m
+              long_window: 1h
+              burn_rate: 14.4
+            - severity: warning
+              short_window: 30m
+              long_window: 6h
+              burn_rate: 6
+
+      - name: frontend-latency
+        description: "95% of frontend requests complete within 200ms"
+        objective: 95.0
+        window: 30d
+        sli:
+          type: latency
+          threshold_seconds: 0.2
+          # Note: Actual latency metrics require application instrumentation
+          # Using pod ready time as proxy for this simplified demo
+
+      # ------------------------------------------------------------------------
+      # CATALOG SERVICE
+      # ------------------------------------------------------------------------
+      - name: catalog-availability
+        description: "Catalog service availability"
+        objective: 99.9
+        window: 30d
+        sli:
+          type: availability
+          good_query: |
+            sum(kube_pod_status_ready{namespace="microshop",pod=~"catalog.*",condition="true"})
+          total_query: |
+            count(kube_pod_info{namespace="microshop",pod=~"catalog.*"})
+
+      - name: catalog-latency
+        description: "95% of catalog requests complete within 100ms"
+        objective: 95.0
+        window: 30d
+        sli:
+          type: latency
+          threshold_seconds: 0.1
+
+      # ------------------------------------------------------------------------
+      # CART SERVICE
+      # ------------------------------------------------------------------------
+      - name: cart-availability
+        description: "Cart service availability"
+        objective: 99.5
+        window: 30d
+        sli:
+          type: availability
+          good_query: |
+            sum(kube_pod_status_ready{namespace="microshop",pod=~"cart.*",condition="true"})
+          total_query: |
+            count(kube_pod_info{namespace="microshop",pod=~"cart.*"})
+
+      - name: cart-latency
+        description: "95% of cart requests complete within 150ms"
+        objective: 95.0
+        window: 30d
+        sli:
+          type: latency
+          threshold_seconds: 0.15
+
+      # ------------------------------------------------------------------------
+      # CHECKOUT SERVICE
+      # ------------------------------------------------------------------------
+      - name: checkout-availability
+        description: "Checkout service availability - successful order processing"
+        objective: 99.0
+        window: 30d
+        sli:
+          type: availability
+          good_query: |
+            sum(kube_pod_status_ready{namespace="microshop",pod=~"checkout.*",condition="true"})
+          total_query: |
+            count(kube_pod_info{namespace="microshop",pod=~"checkout.*"})
+
+      - name: checkout-latency
+        description: "95% of checkout requests complete within 500ms"
+        objective: 95.0
+        window: 30d
+        sli:
+          type: latency
+          threshold_seconds: 0.5
+
+      # ------------------------------------------------------------------------
+      # DATA TIER
+      # ------------------------------------------------------------------------
+      - name: postgresql-availability
+        description: "PostgreSQL database availability"
+        objective: 99.9
+        window: 30d
+        sli:
+          type: availability
+          good_query: |
+            sum(kube_pod_status_ready{namespace="microshop",pod=~"postgresql.*",condition="true"})
+          total_query: |
+            count(kube_pod_info{namespace="microshop",pod=~"postgresql.*"})
+
+      - name: redis-availability
+        description: "Redis cache availability"
+        objective: 99.9
+        window: 30d
+        sli:
+          type: availability
+          good_query: |
+            sum(kube_pod_status_ready{namespace="microshop",pod=~"redis.*",condition="true"})
+          total_query: |
+            count(kube_pod_info{namespace="microshop",pod=~"redis.*"})
+
+      - name: rabbitmq-availability
+        description: "RabbitMQ message queue availability"
+        objective: 99.5
+        window: 30d
+        sli:
+          type: availability
+          good_query: |
+            sum(kube_pod_status_ready{namespace="microshop",pod=~"rabbitmq.*",condition="true"})
+          total_query: |
+            count(kube_pod_info{namespace="microshop",pod=~"rabbitmq.*"})
+
+---
+# Prometheus Recording Rules for SLO calculations
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microshop-slo-rules
+  namespace: monitoring
+  labels:
+    app: microshop
+    component: prometheus-rules
+    prometheus: kube-prometheus
+data:
+  microshop-slo-rules.yaml: |
+    groups:
+      - name: microshop-slo-recording
+        interval: 30s
+        rules:
+          # Pod availability ratio per service
+          - record: microshop:pod_availability:ratio
+            expr: |
+              sum by (app) (
+                kube_pod_status_ready{namespace="microshop", condition="true"}
+              ) / sum by (app) (
+                kube_pod_info{namespace="microshop"}
+              )
+
+          # Pod restart rate (indicates instability)
+          - record: microshop:pod_restarts:rate5m
+            expr: |
+              sum by (pod) (
+                rate(kube_pod_container_status_restarts_total{namespace="microshop"}[5m])
+              )
+
+          # Container resource usage
+          - record: microshop:container_cpu_usage:avg
+            expr: |
+              avg by (pod) (
+                rate(container_cpu_usage_seconds_total{namespace="microshop"}[5m])
+              )
+
+          - record: microshop:container_memory_usage:bytes
+            expr: |
+              sum by (pod) (
+                container_memory_working_set_bytes{namespace="microshop"}
+              )
+
+      - name: microshop-slo-alerts
+        rules:
+          # High-severity: Multiple pods not ready
+          - alert: MicroShopServiceDegraded
+            expr: |
+              (
+                sum(kube_pod_status_ready{namespace="microshop", condition="true"}) 
+                / count(kube_pod_info{namespace="microshop"})
+              ) < 0.8
+            for: 2m
+            labels:
+              severity: critical
+              service: microshop
+            annotations:
+              summary: "MicroShop service degraded - less than 80% pods ready"
+              description: "{{ $value | humanizePercentage }} of pods are ready in namespace microshop"
+
+          # Warning: Pod restarts detected
+          - alert: MicroShopPodRestarting
+            expr: |
+              sum(rate(kube_pod_container_status_restarts_total{namespace="microshop"}[15m])) > 0
+            for: 1m
+            labels:
+              severity: warning
+              service: microshop
+            annotations:
+              summary: "Pod restarts detected in MicroShop namespace"
+              description: "Container restarts occurring at rate of {{ $value }}/min"
+
+          # Warning: High memory usage
+          - alert: MicroShopHighMemory
+            expr: |
+              (
+                sum(container_memory_working_set_bytes{namespace="microshop"}) 
+                / sum(kube_pod_container_resource_limits{namespace="microshop", resource="memory"})
+              ) > 0.9
+            for: 5m
+            labels:
+              severity: warning
+              service: microshop
+            annotations:
+              summary: "High memory usage in MicroShop"
+              description: "Memory usage is at {{ $value | humanizePercentage }}"

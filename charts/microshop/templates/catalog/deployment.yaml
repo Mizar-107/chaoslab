@@ -1,0 +1,57 @@
+{{- if .Values.catalog.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+  namespace: {{ include "microshop.namespace" . }}
+  labels:
+    {{- include "microshop.labels" . | nindent 4 }}
+    app: catalog
+    tier: backend
+  annotations:
+    chaos.mesh.io/inject: "true"
+spec:
+  replicas: {{ .Values.catalog.replicas }}
+  selector:
+    matchLabels:
+      app: catalog
+  template:
+    metadata:
+      labels:
+        app: catalog
+        tier: backend
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+    spec:
+      {{- if .Values.catalog.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.catalog.nodeSelector | nindent 8 }}
+      {{- end }}
+      tolerations:
+        - key: "node.kubernetes.io/not-ready"
+          operator: "Exists"
+          effect: "NoExecute"
+          tolerationSeconds: 30
+      containers:
+        - name: catalog
+          image: "{{ .Values.catalog.image.repository }}:{{ .Values.catalog.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@postgresql:{{ .Values.postgresql.service.port }}/{{ .Values.postgresql.auth.database }}"
+          envFrom:
+            - configMapRef:
+                name: microshop-config
+          resources:
+            {{- toYaml .Values.catalog.resources | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.catalog.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.catalog.readinessProbe | nindent 12 }}
+{{- end }}

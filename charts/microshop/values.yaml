@@ -1,0 +1,238 @@
+# MicroShop Helm Chart Values
+# A simplified e-commerce demo for chaos engineering experiments
+
+global:
+  namespace: microshop
+  imagePullPolicy: IfNotPresent
+
+# =============================================================================
+# FRONTEND SERVICE
+# =============================================================================
+frontend:
+  enabled: true
+  replicas: 3
+  image:
+    repository: nginx
+    tag: alpine
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  service:
+    type: ClusterIP
+    port: 80
+  nodeSelector:
+    app-tier: frontend
+  # Probes
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# =============================================================================
+# CATALOG SERVICE
+# =============================================================================
+catalog:
+  enabled: true
+  replicas: 2
+  image:
+    repository: nginx
+    tag: alpine
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  service:
+    type: ClusterIP
+    port: 8080
+    metricsPort: 9090
+  nodeSelector:
+    app-tier: backend
+  # Intentional weakness: No circuit breaker to DB
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# =============================================================================
+# CART SERVICE
+# =============================================================================
+cart:
+  enabled: true
+  replicas: 2
+  image:
+    repository: nginx
+    tag: alpine
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  service:
+    type: ClusterIP
+    port: 8080
+    metricsPort: 9090
+  nodeSelector:
+    app-tier: backend
+  # Intentional weakness: No retry logic for Redis
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# =============================================================================
+# CHECKOUT SERVICE
+# =============================================================================
+checkout:
+  enabled: true
+  replicas: 2
+  image:
+    repository: nginx
+    tag: alpine
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  service:
+    type: ClusterIP
+    port: 8081
+    metricsPort: 9090
+  nodeSelector:
+    app-tier: backend
+  # Intentional weakness: Synchronous order processing
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# =============================================================================
+# DATA TIER: POSTGRESQL
+# =============================================================================
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+  auth:
+    username: microshop
+    password: microshop123
+    database: catalog
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 1Gi
+  service:
+    port: 5432
+  nodeSelector:
+    app-tier: data
+
+# =============================================================================
+# DATA TIER: REDIS
+# =============================================================================
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  service:
+    port: 6379
+  nodeSelector:
+    app-tier: data
+
+# =============================================================================
+# DATA TIER: RABBITMQ
+# =============================================================================
+rabbitmq:
+  enabled: true
+  image:
+    repository: rabbitmq
+    tag: "3-management-alpine"
+  auth:
+    username: microshop
+    password: microshop123
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    amqpPort: 5672
+    managementPort: 15672
+  nodeSelector:
+    app-tier: data
+
+# =============================================================================
+# INGRESS
+# =============================================================================
+ingress:
+  enabled: true
+  className: nginx
+  host: localhost
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+# =============================================================================
+# SERVICE MONITORS (Prometheus)
+# =============================================================================
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  scrapeTimeout: 10s

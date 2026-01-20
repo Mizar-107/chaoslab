@@ -1,0 +1,75 @@
+# ChaosLab: Kind Cluster Configuration
+# Multi-node cluster for chaos engineering experiments
+#
+# Usage: kind create cluster --config infrastructure/kind-config.yaml
+#
+# Architecture:
+#   - 1 control-plane node (with ingress port mappings)
+#   - 3 worker nodes (labeled by tier for pod scheduling)
+#
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: chaoslab
+
+nodes:
+  # Control Plane Node
+  # Configured for ingress controller with port mappings to host
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      # HTTP traffic (Ingress)
+      - containerPort: 80
+        hostPort: 8080
+        protocol: TCP
+      # HTTPS traffic (Ingress)
+      - containerPort: 443
+        hostPort: 8443
+        protocol: TCP
+      # NodePort range for direct service access
+      - containerPort: 30000
+        hostPort: 30000
+        protocol: TCP
+      - containerPort: 30001
+        hostPort: 30001
+        protocol: TCP
+      - containerPort: 30002
+        hostPort: 30002
+        protocol: TCP
+      - containerPort: 30003
+        hostPort: 30003
+        protocol: TCP
+
+  # Worker Node 1: Frontend tier
+  # For frontend application pods
+  - role: worker
+    labels:
+      app-tier: frontend
+      chaos-enabled: "true"
+
+  # Worker Node 2: Backend tier  
+  # For backend services (catalog, cart, checkout)
+  - role: worker
+    labels:
+      app-tier: backend
+      chaos-enabled: "true"
+
+  # Worker Node 3: Data tier
+  # For databases and message queues
+  - role: worker
+    labels:
+      app-tier: data
+      chaos-enabled: "true"
+
+# Networking configuration
+networking:
+  # Pod network CIDR
+  podSubnet: "10.244.0.0/16"
+  # Service network CIDR
+  serviceSubnet: "10.96.0.0/12"
+  # Disable default CNI to use kindnet (required for network chaos)
+  disableDefaultCNI: false
